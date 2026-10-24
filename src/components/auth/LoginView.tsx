@@ -21,8 +21,8 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onGoToRegister }) => {
   const { login, openHelpModal, openForgotPassModal } = useWasibu();
-  const [emailOrUser, setEmailOrUser] = useState('admin');
-  const [password, setPassword] = useState('password');
+  const [emailOrUser, setEmailOrUser] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
