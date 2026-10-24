@@ -33,8 +33,14 @@ export type NavTab =
 interface WasibuContextType {
   currentUser: User | null;
   users: User[];
-  login: (emailOrUser: string, pass: string) => { success: boolean; message?: string };
-  register: (name: string, email: string, pass: string) => { success: boolean; message?: string };
+  login: (emailOrUser: string, pass: string) => {
+    success: boolean;
+    message?: string;
+  };
+  register: (name: string, email: string, pass: string) => {
+    success: boolean;
+    message?: string;
+  };
   logout: () => void;
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
@@ -44,7 +50,9 @@ interface WasibuContextType {
   orderHistory: Order[];
   selectedOrder: Order | null;
   setSelectedOrder: (order: Order | null) => void;
-  createOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>) => Order;
+  createOrder: (
+    order: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>
+  ) => Order;
   updateOrderStatus: (orderId: number, newStatus: OrderStatus) => void;
   cancelOrder: (orderId: number) => void;
   saveOrderChanges: (order: Order) => void;
@@ -91,12 +99,11 @@ interface WasibuContextType {
 
 const WasibuContext = createContext<WasibuContextType | null>(null);
 
-export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Session
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('wasibu_user');
-    return saved ? JSON.parse(saved) : INITIAL_USERS[0];
-  });
+export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  // Session: jangan otomatis masuk menggunakan session lama
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [users] = useState<User[]>(INITIAL_USERS);
   const [activeTab, setActiveTab] = useState<NavTab>('pesanan');
@@ -114,10 +121,13 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return saved ? JSON.parse(saved) : INITIAL_ORDER_HISTORY;
   });
 
-  // Selected Order mengikuti data pesanan aktif yang tersimpan
+  // Selected Order
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(() => {
     const saved = localStorage.getItem('wasibu_active_orders');
-    const orders: Order[] = saved ? JSON.parse(saved) : INITIAL_ACTIVE_ORDERS;
+    const orders: Order[] = saved
+      ? JSON.parse(saved)
+      : INITIAL_ACTIVE_ORDERS;
+
     return orders[0] ?? null;
   });
 
@@ -140,7 +150,9 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   // Reports
-  const [monthlyReports] = useState<MonthlyReport[]>(INITIAL_MONTHLY_REPORTS);
+  const [monthlyReports] = useState<MonthlyReport[]>(
+    INITIAL_MONTHLY_REPORTS
+  );
 
   // Settings
   const [settings, setSettings] = useState<WarungSettings>(() => {
@@ -157,11 +169,17 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Sinkronisasi data ke localStorage
   useEffect(() => {
-    localStorage.setItem('wasibu_active_orders', JSON.stringify(activeOrders));
+    localStorage.setItem(
+      'wasibu_active_orders',
+      JSON.stringify(activeOrders)
+    );
   }, [activeOrders]);
 
   useEffect(() => {
-    localStorage.setItem('wasibu_order_history', JSON.stringify(orderHistory));
+    localStorage.setItem(
+      'wasibu_order_history',
+      JSON.stringify(orderHistory)
+    );
   }, [orderHistory]);
 
   useEffect(() => {
@@ -180,6 +198,7 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('wasibu_settings', JSON.stringify(settings));
   }, [settings]);
 
+  // Simpan session hanya jika sudah login
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('wasibu_user', JSON.stringify(currentUser));
@@ -188,11 +207,13 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [currentUser]);
 
-  // Pastikan pesanan yang dipilih selalu mengikuti data aktif terbaru
+  // Pastikan pesanan terpilih mengikuti data aktif terbaru
   useEffect(() => {
     if (!selectedOrder) return;
 
-    const latestOrder = activeOrders.find((order) => order.id === selectedOrder.id);
+    const latestOrder = activeOrders.find(
+      (order) => order.id === selectedOrder.id
+    );
 
     if (latestOrder) {
       if (latestOrder !== selectedOrder) {
@@ -203,59 +224,60 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [activeOrders, selectedOrder]);
 
-  // Auth Methods
+  // ==================================================
+  // AUTH METHODS
+  // Username admin: admin
+  // Password admin: admin@example
+  // ==================================================
   const login = (emailOrUser: string, pass: string) => {
-    const trimmed = emailOrUser.trim().toLowerCase();
+    const username = emailOrUser.trim().toLowerCase();
 
-    const found = users.find(
-      (u) => u.username.toLowerCase() === trimmed || u.email.toLowerCase() === trimmed
+    const ADMIN_USERNAME = 'admin';
+    const ADMIN_PASSWORD = 'admin@example';
+
+    // Tolak username selain admin
+    if (username !== ADMIN_USERNAME) {
+      return {
+        success: false,
+        message: 'Username tidak terdaftar atau tidak memiliki akses.',
+      };
+    }
+
+    // Password harus sama persis
+    if (pass !== ADMIN_PASSWORD) {
+      return {
+        success: false,
+        message: 'Password admin salah. Silakan coba lagi.',
+      };
+    }
+
+    // Gunakan data admin yang tersedia di initialData
+    const adminUser = users.find(
+      (user) => user.username.trim().toLowerCase() === ADMIN_USERNAME
     );
 
-    if (!found) {
+    if (!adminUser) {
       return {
         success: false,
-        message: 'Email atau username tidak terdaftar dalam sistem!',
+        message:
+          'Akun admin tidak ditemukan. Periksa INITIAL_USERS di initialData.ts.',
       };
     }
 
-    if (!pass || pass.length < 3) {
-      return {
-        success: false,
-        message: 'Password salah. Silakan coba lagi.',
-      };
-    }
+    setCurrentUser(adminUser);
 
-    setCurrentUser(found);
-    return { success: true };
+    return {
+      success: true,
+      message: 'Login admin berhasil.',
+    };
   };
 
-  const register = (name: string, email: string, pass: string) => {
-    if (!name || !email || !pass) {
-      return {
-        success: false,
-        message: 'Harap isi semua kolom formulir pendaftaran.',
-      };
-    }
-
-    if (pass.length < 8) {
-      return {
-        success: false,
-        message: 'Password minimal 8 karakter sesuai ketentuan.',
-      };
-    }
-
-    const newUser: User = {
-      id: Date.now(),
-      name,
-      username: email.split('@')[0],
-      email,
-      role: 'Kasir',
-      avatar:
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
+  // Pendaftaran dinonaktifkan agar tidak menjadi jalur masuk alternatif
+  const register = (_name: string, _email: string, _pass: string) => {
+    return {
+      success: false,
+      message: 'Pendaftaran dinonaktifkan. Silakan login sebagai admin.',
     };
-
-    setCurrentUser(newUser);
-    return { success: true };
   };
 
   const logout = () => {
@@ -268,9 +290,13 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>
   ): Order => {
     const newId = Date.now();
-    const orderSeq = String(activeOrders.length + orderHistory.length + 1).padStart(3, '0');
+
+    const orderSeq = String(
+      activeOrders.length + orderHistory.length + 1
+    ).padStart(3, '0');
 
     const today = new Date();
+
     const todayStr = [
       today.getFullYear(),
       String(today.getMonth() + 1).padStart(2, '0'),
@@ -289,22 +315,27 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveOrders((prev) => [newOrder, ...prev]);
     setSelectedOrder(newOrder);
 
-    // Update customer stats if name provided
-    if (newOrder.customerName && newOrder.customerName !== 'Pelanggan Meja') {
+    // Update data pelanggan jika nama tersedia
+    if (
+      newOrder.customerName &&
+      newOrder.customerName !== 'Pelanggan Meja'
+    ) {
       setCustomers((prev) => {
         const exist = prev.find(
-          (c) => c.name.toLowerCase() === newOrder.customerName.toLowerCase()
+          (customer) =>
+            customer.name.toLowerCase() ===
+            newOrder.customerName.toLowerCase()
         );
 
         if (exist) {
-          return prev.map((c) =>
-            c.id === exist.id
+          return prev.map((customer) =>
+            customer.id === exist.id
               ? {
-                  ...c,
-                  orderCount: c.orderCount + 1,
-                  totalSpent: c.totalSpent + newOrder.total,
+                  ...customer,
+                  orderCount: customer.orderCount + 1,
+                  totalSpent: customer.totalSpent + newOrder.total,
                 }
-              : c
+              : customer
           );
         }
 
@@ -329,8 +360,11 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return newOrder;
   };
 
-  // Perbaikan utama: pesanan selesai dipindahkan ke riwayat
-  const updateOrderStatus = (orderId: number, newStatus: OrderStatus) => {
+  // Pindahkan pesanan selesai ke riwayat
+  const updateOrderStatus = (
+    orderId: number,
+    newStatus: OrderStatus
+  ) => {
     const order = activeOrders.find((item) => item.id === orderId);
 
     if (!order) return;
@@ -342,17 +376,17 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         paymentStatus: 'Lunas',
       };
 
-      // Hindari duplikasi berdasarkan ID pesanan
       setOrderHistory((prev) => [
         finishedOrder,
         ...prev.filter((item) => item.id !== orderId),
       ]);
 
-      // Hapus pesanan dari daftar pesanan aktif
-      const remainingOrders = activeOrders.filter((item) => item.id !== orderId);
+      const remainingOrders = activeOrders.filter(
+        (item) => item.id !== orderId
+      );
+
       setActiveOrders(remainingOrders);
 
-      // Pilih pesanan aktif berikutnya, jika ada
       setSelectedOrder((current) => {
         if (current?.id !== orderId) {
           return current;
@@ -370,7 +404,9 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     setActiveOrders((prev) =>
-      prev.map((item) => (item.id === orderId ? updatedOrder : item))
+      prev.map((item) =>
+        item.id === orderId ? updatedOrder : item
+      )
     );
 
     setSelectedOrder((current) =>
@@ -379,7 +415,9 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const cancelOrder = (orderId: number) => {
-    const remainingOrders = activeOrders.filter((item) => item.id !== orderId);
+    const remainingOrders = activeOrders.filter(
+      (item) => item.id !== orderId
+    );
 
     setActiveOrders(remainingOrders);
 
@@ -394,7 +432,9 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const saveOrderChanges = (updated: Order) => {
     setActiveOrders((prev) =>
-      prev.map((item) => (item.id === updated.id ? updated : item))
+      prev.map((item) =>
+        item.id === updated.id ? updated : item
+      )
     );
 
     setSelectedOrder((current) =>
@@ -404,13 +444,19 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Menu Operations
   const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
-    const newItem: MenuItem = { ...item, id: Date.now() };
+    const newItem: MenuItem = {
+      ...item,
+      id: Date.now(),
+    };
+
     setMenuItems((prev) => [newItem, ...prev]);
   };
 
   const updateMenuItem = (item: MenuItem) => {
     setMenuItems((prev) =>
-      prev.map((menu) => (menu.id === item.id ? item : menu))
+      prev.map((menu) =>
+        menu.id === item.id ? item : menu
+      )
     );
   };
 
@@ -420,7 +466,8 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         menu.id === id
           ? {
               ...menu,
-              status: menu.status === 'Tersedia' ? 'Habis' : 'Tersedia',
+              status:
+                menu.status === 'Tersedia' ? 'Habis' : 'Tersedia',
             }
           : menu
       )
@@ -428,12 +475,17 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Stock Operations
-  const addStock = (id: number, amount: number, note?: string) => {
+  const addStock = (
+    id: number,
+    amount: number,
+    note?: string
+  ) => {
     setStockItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
 
         const newCurrent = item.currentStock + amount;
+
         const newStatus =
           newCurrent <= 0
             ? 'Habis'
@@ -461,18 +513,26 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           currentStock: newCurrent,
           status: newStatus,
           lastUpdated: newMovement.date,
-          movements: [newMovement, ...(item.movements || [])],
+          movements: [
+            newMovement,
+            ...(item.movements || []),
+          ],
         };
       })
     );
   };
 
-  const adjustStock = (id: number, newStock: number, note?: string) => {
+  const adjustStock = (
+    id: number,
+    newStock: number,
+    note?: string
+  ) => {
     setStockItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
 
         const diff = newStock - item.currentStock;
+
         const newStatus =
           newStock <= 0
             ? 'Habis'
@@ -500,27 +560,50 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           currentStock: newStock,
           status: newStatus,
           lastUpdated: newMovement.date,
-          movements: [newMovement, ...(item.movements || [])],
+          movements: [
+            newMovement,
+            ...(item.movements || []),
+          ],
         };
       })
     );
   };
 
+  // Settings
   const updateSettings = (newSettings: WarungSettings) => {
     setSettings(newSettings);
   };
 
   // Modal helpers
-  const openReceiptModal = (order: Order) => setReceiptOrder(order);
-  const closeReceiptModal = () => setReceiptOrder(null);
-  const openHelpModal = () => setIsHelpModalOpen(true);
-  const closeHelpModal = () => setIsHelpModalOpen(false);
-  const openForgotPassModal = () => setIsForgotPassModalOpen(true);
-  const closeForgotPassModal = () => setIsForgotPassModalOpen(false);
-  const openLogoutConfirm = () => setIsLogoutConfirmOpen(true);
-  const closeLogoutConfirm = () => setIsLogoutConfirmOpen(false);
-  const openSourceCodeModal = () => setIsSourceCodeModalOpen(true);
-  const closeSourceCodeModal = () => setIsSourceCodeModalOpen(false);
+  const openReceiptModal = (order: Order) =>
+    setReceiptOrder(order);
+
+  const closeReceiptModal = () =>
+    setReceiptOrder(null);
+
+  const openHelpModal = () =>
+    setIsHelpModalOpen(true);
+
+  const closeHelpModal = () =>
+    setIsHelpModalOpen(false);
+
+  const openForgotPassModal = () =>
+    setIsForgotPassModalOpen(true);
+
+  const closeForgotPassModal = () =>
+    setIsForgotPassModalOpen(false);
+
+  const openLogoutConfirm = () =>
+    setIsLogoutConfirmOpen(true);
+
+  const closeLogoutConfirm = () =>
+    setIsLogoutConfirmOpen(false);
+
+  const openSourceCodeModal = () =>
+    setIsSourceCodeModalOpen(true);
+
+  const closeSourceCodeModal = () =>
+    setIsSourceCodeModalOpen(false);
 
   return (
     <WasibuContext.Provider
@@ -580,7 +663,9 @@ export const useWasibu = () => {
   const context = useContext(WasibuContext);
 
   if (!context) {
-    throw new Error('useWasibu must be used within a WasibuProvider');
+    throw new Error(
+      'useWasibu must be used within a WasibuProvider'
+    );
   }
 
   return context;
