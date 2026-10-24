@@ -253,14 +253,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onBackToLogin }) => 
                 Daftar
               </button>
 
-              <div className="relative my-4 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
-                </div>
-                <span className="relative bg-white px-3 text-xs text-gray-400">
-                  atau daftar dengan
-                </span>
-              </div>
+             
 
             
 
