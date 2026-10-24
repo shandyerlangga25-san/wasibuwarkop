@@ -1,0 +1,6 @@
+{
+  "name": "WASIBU - Warung Si Bungsu Merchant",
+  "description": "Sistem Manajemen & Kasir Warung Si Bungsu (WASIBU) - Pesanan Aktif, Riwayat, Menu, Stok Barang, Pelanggan, Laporan, dan Pengaturan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
