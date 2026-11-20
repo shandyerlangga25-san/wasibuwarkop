@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { WasibuProvider, useWasibu } from './context/WasibuContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
@@ -17,53 +18,144 @@ import { HelpCenterModal } from './components/common/HelpCenterModal';
 import { ForgotPasswordModal } from './components/common/ForgotPasswordModal';
 import { LogoutConfirmModal } from './components/common/LogoutConfirmModal';
 import { PhpCodeViewerModal } from './components/common/PhpCodeViewerModal';
+import PesananUser from './components/modules/PesananUser';
 
 type AuthScreen = 'login' | 'register' | 'reset';
 
 const AppContent: React.FC = () => {
-  const { currentUser, activeTab } = useWasibu();
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+  const {
+  currentUser,
+  activeTab,
+  createOrder,
+  logout,
+} = useWasibu();
 
-  // If user is not logged in, render authentication screens matching Slides 1, 2, 3, 4, 5
-  if (!currentUser) {
+ const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+
+const [appView, setAppView] = useState<'user' | 'admin'>(() => {
+  return window.location.pathname === '/admin' ? 'admin' : 'user';
+});
+
+// Jika membuka /admin, pastikan pengguna harus login kembali
+useEffect(() => {
+  if (window.location.pathname === '/admin') {
+    logout();
+  }
+}, []);
+  // Halaman pemesanan pelanggan
+  if (appView === 'user') {
+    return (
+     <div className="min-h-screen">
+
+    <button
+ onClick={() => {
+  logout();
+  window.history.pushState({}, '', '/admin');
+  setAppView('admin');
+  setAuthScreen('login');
+}}
+  
+
+/>
+
+
+ 
+
+        <PesananUser
+          menus={[]}
+          createOrder={(order) => {
+            const now = new Date();
+
+            // Ubah format item pelanggan menjadi format Order aplikasi
+            const orderItems = order.items.map((item, index) => ({
+              id: index + 1,
+              menuId: Number(item.menuId),
+              menuName: item.name,
+              qty: item.quantity,
+              price: item.price,
+              subtotal: item.price * item.quantity,
+            }));
+
+            // Simpan pesanan ke WasibuContext
+            createOrder({
+              tableNumber: order.tableNumber,
+              customerName: order.customerName || 'Pelanggan Meja',
+              orderTime: now.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              orderDate: now.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }),
+              source: 'QR',
+              status: 'Baru',
+              paymentStatus: order.paymentStatus,
+              paymentMethod: order.paymentMethod,
+              referenceNumber: '',
+              items: orderItems,
+              notes: order.notes,
+              subtotal: order.total,
+              discount: 0,
+              tax: 0,
+              total: order.total,
+            });
+
+            // Pesanan otomatis masuk ke activeOrders
+            
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Login admin
+ if (!currentUser) {
     if (authScreen === 'register') {
       return (
         <>
           <RegisterView onBackToLogin={() => setAuthScreen('login')} />
           <HelpCenterModal />
-          <ForgotPasswordModal onGoToReset={() => setAuthScreen('reset')} />
+          <ForgotPasswordModal
+            onGoToReset={() => setAuthScreen('reset')}
+          />
         </>
       );
     }
+
     if (authScreen === 'reset') {
       return (
         <>
-          <ResetPasswordView onBackToLogin={() => setAuthScreen('login')} />
+          <ResetPasswordView
+            onBackToLogin={() => setAuthScreen('login')}
+          />
           <HelpCenterModal />
         </>
       );
     }
+
     return (
       <>
-        <LoginView onGoToRegister={() => setAuthScreen('register')} />
+        <LoginView
+          onGoToRegister={() => setAuthScreen('register')}
+        />
         <HelpCenterModal />
-        <ForgotPasswordModal onGoToReset={() => setAuthScreen('reset')} />
+        <ForgotPasswordModal
+          onGoToReset={() => setAuthScreen('reset')}
+        />
       </>
     );
   }
 
-  // If user is logged in, render main layout with active module
+  // Dashboard admin
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#F8F9FA] text-gray-900 font-sans antialiased">
-      {/* Dark Sidebar matching Slide 6, 11, 13, 16, 18, 19, 20 */}
       <Sidebar />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Navbar */}
         <Navbar />
 
-        {/* Scrollable Viewport */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'pesanan' && <PesananAktifView />}
           {activeTab === 'riwayat' && <RiwayatPesananView />}
@@ -75,10 +167,11 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals & Dialogs */}
       <ReceiptModal />
       <HelpCenterModal />
-      <ForgotPasswordModal onGoToReset={() => setAuthScreen('reset')} />
+      <ForgotPasswordModal
+        onGoToReset={() => setAuthScreen('reset')}
+      />
       <LogoutConfirmModal />
       <PhpCodeViewerModal />
     </div>

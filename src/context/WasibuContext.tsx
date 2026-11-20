@@ -204,30 +204,34 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [activeOrders, selectedOrder]);
 
   // Auth Methods
-  const login = (emailOrUser: string, pass: string) => {
-    const trimmed = emailOrUser.trim().toLowerCase();
+ const login = (emailOrUser: string, pass: string) => {
+  const trimmed = emailOrUser.trim().toLowerCase();
 
-    const found = users.find(
-      (u) => u.username.toLowerCase() === trimmed || u.email.toLowerCase() === trimmed
-    );
+  const found = users.find(
+    (u) =>
+      u.username.toLowerCase() === trimmed ||
+      u.email.toLowerCase() === trimmed
+  );
 
-    if (!found) {
-      return {
-        success: false,
-        message: 'Email atau username tidak terdaftar dalam sistem!',
-      };
-    }
+  if (!found) {
+    return {
+      success: false,
+      message: 'Email atau username tidak terdaftar dalam sistem!',
+    };
+  }
 
-    if (!pass || pass.length < 3) {
-      return {
-        success: false,
-        message: 'Password salah. Silakan coba lagi.',
-      };
-    }
+  if (pass !== found.password) {
+    return {
+      success: false,
+      message: 'Password salah. Silakan coba lagi.',
+    };
+  }
 
-    setCurrentUser(found);
-    return { success: true };
-  };
+  setCurrentUser(found);
+  return { success: true };
+};
+
+    
 
   const register = (name: string, email: string, pass: string) => {
     if (!name || !email || !pass) {
@@ -245,19 +249,19 @@ export const WasibuProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const newUser: User = {
-      id: Date.now(),
-      name,
-      username: email.split('@')[0],
-      email,
-      role: 'Kasir',
-      avatar:
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
-    };
+  id: Date.now(),
+  name,
+  username: email.split('@')[0],
+  email,
+  password: pass,
+  role: 'Kasir',
+  avatar:
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
+};
 
-    setCurrentUser(newUser);
-    return { success: true };
-  };
-
+setCurrentUser(newUser);
+return { success: true };
+};
   const logout = () => {
     setCurrentUser(null);
     setIsLogoutConfirmOpen(false);
