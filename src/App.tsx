@@ -33,7 +33,8 @@ const AppContent: React.FC = () => {
  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
 
 const [appView, setAppView] = useState<'user' | 'admin'>(() => {
-  return window.location.pathname === '/admin' ? 'admin' : 'user';
+  const path = window.location.pathname.replace(/\/+$/, '');
+  return path === '/admin' ? 'admin' : 'user';
 });
 
 // Jika membuka /admin, pastikan pengguna harus login kembali
