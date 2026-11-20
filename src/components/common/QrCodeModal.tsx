@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { X, QrCode, Printer, Download } from 'lucide-react';
+import { X, QrCode, Printer } from 'lucide-react';
 import { useWasibu } from '../../context/WasibuContext';
 
 interface QrCodeModalProps {
@@ -7,16 +8,25 @@ interface QrCodeModalProps {
   onClose: () => void;
 }
 
-export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => {
+export const QrCodeModal: React.FC<QrCodeModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const { settings } = useWasibu();
   const [selectedTable, setSelectedTable] = useState('Meja 05');
 
   if (!isOpen) return null;
 
+  const websiteUrl = 'https://wasibuwarkop-myob.vercel.app/';
+
   const tables = Array.from({ length: settings.totalTables }).map((_, i) => {
     const num = String(i + 1).padStart(2, '0');
     return `Meja ${num}`;
   });
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+    websiteUrl
+  )}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -27,13 +37,17 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
               <QrCode className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">QR Code Meja Pelanggan</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                QR Code Meja Pelanggan
+              </h3>
               <p className="text-xs text-gray-500">
-                Pindai untuk memesan langsung dari meja tanpa antre
+                Pindai untuk membuka website Wasibu
               </p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100"
           >
@@ -41,11 +55,11 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
-        {/* Table Selector */}
         <div className="py-4">
           <label className="block text-xs font-semibold text-gray-700 mb-2">
             Pilih Nomor Meja:
           </label>
+
           <div className="grid grid-cols-5 gap-2">
             {tables.map((t) => (
               <button
@@ -64,33 +78,32 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
           </div>
         </div>
 
-        {/* QR Code Stand Preview */}
         <div className="p-6 bg-gradient-to-b from-orange-50/50 to-orange-100/40 rounded-xl border border-orange-200/60 flex flex-col items-center text-center">
           <div className="inline-block px-3 py-1 bg-[#FF5722] text-white text-[11px] font-bold rounded-full mb-2 uppercase tracking-wider">
             Warung Si Bungsu
           </div>
-          <h4 className="text-xl font-black text-gray-900">{selectedTable}</h4>
+
+          <h4 className="text-xl font-black text-gray-900">
+            {selectedTable}
+          </h4>
+
           <p className="text-xs text-gray-600 mb-4">
-            Scan untuk melihat menu & memesan makanan
+            Scan untuk membuka website Wasibu
           </p>
 
-          {/* QR visual with logo in center */}
-          <div className="w-48 h-48 bg-white p-3 rounded-2xl shadow-md border border-gray-200 flex flex-col items-center justify-center relative">
+          <div className="w-48 h-48 bg-white p-3 rounded-2xl shadow-md border border-gray-200 flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                `https://wasibu.id/order?table=${selectedTable}`
-              )}`}
-              alt={`QR ${selectedTable}`}
+              src={qrUrl}
+              alt={`QR Code ${selectedTable}`}
               className="w-full h-full object-contain"
             />
           </div>
 
-          <p className="text-[11px] text-gray-500 mt-4">
-            Atau akses web: <strong className="text-gray-800">wasibu.id/order</strong>
+          <p className="text-[11px] text-gray-500 mt-4 break-all">
+            Website: <strong className="text-gray-800">{websiteUrl}</strong>
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100 mt-4">
           <button
             type="button"
@@ -99,13 +112,14 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
           >
             Tutup
           </button>
+
           <button
             type="button"
             onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-[#FF5722] hover:bg-[#E64A19] text-white rounded-xl shadow-sm transition"
           >
             <Printer className="w-4 h-4" />
-            <span>Cetak QR Meja</span>
+            <span>Cetak QR</span>
           </button>
         </div>
       </div>
